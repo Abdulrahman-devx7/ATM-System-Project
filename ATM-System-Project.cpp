@@ -415,6 +415,9 @@ void VerifyBalanceForWithdraw(unordered_map<string, stClientData>::iterator& cli
             cout << "\n\nDone! Your withdrawal of " << withdrawAmount << " has been successfully completed. Your new balance is: "
                 << clientIt->second.balanceUSD << " $\n\n";
         }
+        else
+            cout << "\nInsufficient Balance! You can withdraw up to " << clientIt->second.balanceUSD 
+            << "$\nPlease, try again with with a smaller amount.\n";
     }
 }
 
@@ -429,23 +432,17 @@ void VerifyDeposit(unordered_map<string, stClientData>::iterator& clientIt, int 
     }
 }
 
-void DepositLogic(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void DepositLogic(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
-    unordered_map<string, stClientData>::iterator clientIt;
+    int depositAmount = ReadDepositNumber();
 
-    if ((clientIt = systemClients.find(loggedInAccountNumber)) != systemClients.end())
-    {
-        int depositAmount = ReadDepositNumber();
-
-        VerifyDeposit(clientIt, depositAmount);
-        SaveToFile(CLIENTS_FILE_NAME, systemClients);
-    }
+    VerifyDeposit(loggedInClientIt, depositAmount);
+    SaveToFile(CLIENTS_FILE_NAME, systemClients);
 }
 
-void QuickWithdrawLogic(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void QuickWithdrawLogic(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
-    stClientData client = systemClients.find(loggedInAccountNumber)->second;
-    cout << "Your balance is: " << client.balanceUSD << " $\n\n";
+    cout << "Your balance is: " << loggedInClientIt->second.balanceUSD << " $\n\n";
 
     enQuickWithdraw quickWithdrawChoice = enQuickWithdraw::Exit;
     EvaluateMenuChoice(quickWithdrawChoice);
@@ -454,102 +451,82 @@ void QuickWithdrawLogic(unordered_map<string, stClientData>& systemClients, cons
     {
         int withdrawalAmount = GetQuickWithdrawAmount(quickWithdrawChoice);
 
-        auto clientIt = FindClientByAccountNumber(loggedInAccountNumber, systemClients);
-
-        if (clientIt != systemClients.end())
-        {
-            VerifyBalanceForWithdraw(clientIt, withdrawalAmount);
-            SaveToFile(CLIENTS_FILE_NAME, systemClients);
-        }
-        else
-            cout << "\nClient account not found!\n";
+        VerifyBalanceForWithdraw(loggedInClientIt, withdrawalAmount);
+        SaveToFile(CLIENTS_FILE_NAME, systemClients);
     }
 }
 
-void NormalWithdrawLogic(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void NormalWithdrawLogic(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
-    auto clientIt = FindClientByAccountNumber(loggedInAccountNumber, systemClients);
+    cout << "Your balance is: " << loggedInClientIt->second.balanceUSD << " $\n\n";
 
-    if (clientIt != systemClients.end())
+    int withdrawalAmount = ReadWithdrawNumber();
+
+    if (!CheckBalanceForWithdrawal(loggedInClientIt->second, withdrawalAmount))
+        cout << "\nThe amount exceeds your balance.\n" <<
+        "You can withdraw up to " << loggedInClientIt->second.balanceUSD;
+
+    else if (withdrawalAmount % 5 != 0)
     {
-        cout << "Your balance is: " << clientIt->second.balanceUSD << " $\n\n";
-
-        int withdrawalAmount = ReadWithdrawNumber();
-
-        if (!CheckBalanceForWithdrawal(clientIt->second, withdrawalAmount))
-            cout << "\nThe amount exceeds your balance.\n" <<
-            "You can withdraw up to " << clientIt->second.balanceUSD;
-
-        else if (withdrawalAmount % 5 != 0)
-        {
-            cout << "\nThe inputted number is sufficient but not a multiple of 5.\n";
-            cout << "Please ensure your withdrawal amount is a multiple of 5.\n";
-        }
-        else
-        {
-            VerifyBalanceForWithdraw(clientIt, withdrawalAmount);
-            SaveToFile(CLIENTS_FILE_NAME, systemClients);
-        }
+        cout << "\nThe inputted number is sufficient but not a multiple of 5.\n";
+        cout << "Please ensure your withdrawal amount is a multiple of 5.\n";
     }
     else
-        cout << "\nClient account not found!\n";
+    {
+        VerifyBalanceForWithdraw(loggedInClientIt, withdrawalAmount);
+        SaveToFile(CLIENTS_FILE_NAME, systemClients);
+    }
 }
 
-void NormalWithdrawScreen(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void NormalWithdrawScreen(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
     PrintScreenHeader("NORMAL WITHDRAW");
-    NormalWithdrawLogic(systemClients, loggedInAccountNumber);
+    NormalWithdrawLogic(loggedInClientIt, systemClients);
 }
 
-void DepositScreen(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void DepositScreen(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
     PrintScreenHeader("DEPOSIT");
-    DepositLogic(systemClients, loggedInAccountNumber);
+    DepositLogic(loggedInClientIt, systemClients);
 }
 
-void QuickWithdrawScreen(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void QuickWithdrawScreen(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
     ShowQuickWithdrawMenu();
-    QuickWithdrawLogic(systemClients, loggedInAccountNumber);
+    QuickWithdrawLogic(loggedInClientIt, systemClients);
 }
 
-void CheckBalanceScreen(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void CheckBalanceScreen(unordered_map<string, stClientData>::iterator& loggedInClientIt)
 {
     PrintScreenHeader("BALANCE INQUIRY");
-
-    auto clientIt = FindClientByAccountNumber(loggedInAccountNumber, systemClients);
-
-    if (clientIt != systemClients.end())
-        cout << "\nYour current balance is " << clientIt->second.balanceUSD << " $\n";
-    else
-        cout << "\nClient account not found!\n";
+    cout << "\nYour current balance is " << loggedInClientIt->second.balanceUSD << " $\n";
 }
 
-void PerformMainMenuOption(const enMenuChoice choice, unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber)
+void PerformMainMenuOption(const enMenuChoice choice, unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients)
 {
     switch (choice)
     {
     case enMenuChoice::QuickWithdraw:
         ResetScreen();
-        QuickWithdrawScreen(systemClients, loggedInAccountNumber);
+        QuickWithdrawScreen(loggedInClientIt, systemClients);
         PromptUserToGetMenu();
         break;
 
     case enMenuChoice::NormalWithdraw:
         ResetScreen();
-        NormalWithdrawScreen(systemClients, loggedInAccountNumber);
+        NormalWithdrawScreen(loggedInClientIt, systemClients);
         PromptUserToGetMenu();
         break;
 
     case enMenuChoice::Deposit:
         ResetScreen();
-        DepositScreen(systemClients, loggedInAccountNumber);
+        DepositScreen(loggedInClientIt, systemClients);
         PromptUserToGetMenu();
         break;
 
     case enMenuChoice::CheckBalance:
         ResetScreen();
-        CheckBalanceScreen(systemClients, loggedInAccountNumber);
+        CheckBalanceScreen(loggedInClientIt);
         PromptUserToGetMenu();
         break;
 
@@ -558,7 +535,7 @@ void PerformMainMenuOption(const enMenuChoice choice, unordered_map<string, stCl
     }
 }
 
-void RunATMServices(unordered_map<string, stClientData>& systemClients, const string& loggedInAccountNumber, enRunningState& state)
+void RunATMServices(unordered_map<string, stClientData>::iterator& loggedInClientIt, unordered_map<string, stClientData>& systemClients, enRunningState& state)
 {
     enMenuChoice runningUtility = enMenuChoice::Logout;
 
@@ -570,15 +547,14 @@ void RunATMServices(unordered_map<string, stClientData>& systemClients, const st
         EvaluateMenuChoice(runningUtility);
 
         if (runningUtility != enMenuChoice::Logout)
-            PerformMainMenuOption(runningUtility, systemClients, loggedInAccountNumber);
-
+            PerformMainMenuOption(runningUtility, loggedInClientIt, systemClients);
 
     } while (runningUtility != enMenuChoice::Logout);
 
     state = enRunningState::InLoginScreen;
 }
 
-void LoginScreen(unordered_map<string, stClientData>& users, enRunningState& runningState, string& loggedInAccountNumber)
+void LoginScreen(unordered_map<string, stClientData>& users, enRunningState& runningState, unordered_map<string, stClientData>::iterator& loggedInClientIt)
 {
     bool isValidUsernameOrPass = true;
     stLoginCredentials loginDetails;
@@ -598,27 +574,27 @@ void LoginScreen(unordered_map<string, stClientData>& users, enRunningState& run
 
     } while (!(isValidUsernameOrPass = VerifyLogin(loginDetails, users)));
 
-    loggedInAccountNumber = users.find(loginDetails.accountNumber)->first;
+    loggedInClientIt = users.find(loginDetails.accountNumber);
 
     runningState = enRunningState::InsideMainMenu;
 }
 
-
 void StartATMSystem()
 {
     enRunningState RunningState = enRunningState::InLoginScreen;
-    string loggedInAccountNumber;
 
     unordered_map<string, stClientData> systemClients;
     LoadFromFile(CLIENTS_FILE_NAME, systemClients, "#//#");
 
+    unordered_map<string, stClientData>::iterator loggedInClientIt = systemClients.end();
+
     do
     {
         if (RunningState == enRunningState::InLoginScreen)
-            LoginScreen(systemClients, RunningState, loggedInAccountNumber);
+            LoginScreen(systemClients, RunningState, loggedInClientIt);
 
         if (RunningState == enRunningState::InsideMainMenu)
-            RunATMServices(systemClients, loggedInAccountNumber, RunningState);
+            RunATMServices(loggedInClientIt, systemClients, RunningState);
 
     } while (true);
 
