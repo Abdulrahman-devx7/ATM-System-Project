@@ -25,7 +25,7 @@ A simple extension of the bank management system project, built with a similar s
 
 This project has no external dependencies. It requires a **C++20-compatible compiler**, such as Microsoft Visual C++ (MSVC) through Visual Studio.
 
-### Using Visual Studio
+### 🟪 Using Visual Studio
 
 1. Clone or download this repository.
 2. Open the project in Visual Studio.
@@ -33,7 +33,7 @@ This project has no external dependencies. It requires a **C++20-compatible comp
 4. Make sure `clients.txt` is located in the program's working directory.
 5. Build and run the project.
 
-### Using Git
+### 🔃 Using Git
 
 ```bash
 git clone https://github.com/Abdulrahman-devx7/ATM-System-Project.git
@@ -56,5 +56,5 @@ Then run the generated executable:
 bank.exe
 ```
 Make sure `clients.txt` is in the same working directory as the executable.
-### Important note
+### ⚠️Important note
 This project was developed for Windows and uses Windows console commands such as `system("cls")`, `system("color 0f")`, and `system("pause>0")` for screen handling. These commands are Windows-specific and may not function as intended on Linux or macOS.
